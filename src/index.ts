@@ -34,7 +34,7 @@ async function api(path: string, options: RequestInit = {}): Promise<unknown> {
 
 const server = new McpServer({
   name: "bountylens",
-  version: "0.1.0",
+  version: "0.2.0",
 });
 
 // ── Sessions ──
@@ -223,6 +223,57 @@ server.tool(
   async ({ session_id, entry_id }) => {
     const data = await api(`/sessions/${session_id}/entries/${entry_id}`, {
       method: "DELETE",
+    });
+    return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
+// ── Reports ──
+
+server.tool(
+  "bountylens_list_reports",
+  "List report drafts in a hunt session.",
+  {
+    session_id: z.number().describe("Session ID"),
+  },
+  async ({ session_id }) => {
+    const data = await api(`/sessions/${session_id}/reports`);
+    return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
+server.tool(
+  "bountylens_draft_report",
+  "Create a report draft in a hunt session. Use this to write vulnerability reports that the hunter can review and submit to bug bounty platforms.",
+  {
+    session_id: z.number().describe("Session ID"),
+    title: z.string().max(300).describe("Report title (e.g. 'SSRF via image proxy allows internal network access')"),
+    body: z.string().max(50000).describe("Full report body — include summary, steps to reproduce, impact, and remediation"),
+    entry_id: z.number().optional().describe("Optional: link to a specific finding entry"),
+  },
+  async ({ session_id, ...body }) => {
+    const data = await api(`/sessions/${session_id}/reports`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+    return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
+server.tool(
+  "bountylens_update_report",
+  "Update a report draft (title, body, or status).",
+  {
+    session_id: z.number().describe("Session ID"),
+    report_id: z.number().describe("Report ID"),
+    title: z.string().max(300).optional().describe("New title"),
+    body: z.string().max(50000).optional().describe("New body"),
+    status: z.enum(["draft", "ready", "submitted"]).optional().describe("New status"),
+  },
+  async ({ session_id, report_id, ...body }) => {
+    const data = await api(`/sessions/${session_id}/reports/${report_id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
     });
     return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
   },
