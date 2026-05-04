@@ -1,0 +1,33 @@
+{
+  "name": "@bountylens/mcp",
+  "version": "0.1.0",
+  "description": "BountyLens MCP server — connect Claude Code to your Hunter Tracker",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "bountylens-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "keywords": ["mcp", "bountylens", "bug-bounty", "claude-code", "security"],
+  "author": "BountyLens",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bountylens/mcp.git"
+  },
+  "files": ["dist"],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}
