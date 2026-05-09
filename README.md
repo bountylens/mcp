@@ -44,6 +44,7 @@ The BountyLens tools will be available immediately. No other setup needed.
 | `bountylens_create_session` | Start a new hunt session with a title and optional program |
 | `bountylens_get_session` | Get a session with all its entries and counts |
 | `bountylens_update_session` | Update title, status, or notes |
+| `bountylens_delete_session` | Permanently delete a session and all its entries and reports |
 
 ### Entries
 
@@ -56,6 +57,7 @@ The BountyLens tools will be available immediately. No other setup needed.
 | `bountylens_add_note` | Add a freeform note to the session |
 | `bountylens_update_entry` | Update an entry's title, description, status, or severity |
 | `bountylens_delete_entry` | Remove an entry |
+| `bountylens_bulk_add_entries` | Add up to 50 entries in one call — for batch logging findings, leads, or tested endpoints |
 
 ### Reports
 
@@ -64,6 +66,7 @@ The BountyLens tools will be available immediately. No other setup needed.
 | `bountylens_draft_report` | Create a report draft — include summary, steps to reproduce, impact, and remediation |
 | `bountylens_list_reports` | List all report drafts in a session |
 | `bountylens_update_report` | Edit a report's title, body, or status (draft/ready/submitted) |
+| `bountylens_delete_report` | Permanently delete a report |
 
 ### Programs
 
@@ -114,6 +117,7 @@ PUT    /api/v1/sessions/:id                      — update session
 DELETE /api/v1/sessions/:id                      — delete session
 GET    /api/v1/sessions/:id/entries              — list entries
 POST   /api/v1/sessions/:id/entries              — create entry
+POST   /api/v1/sessions/:id/entries/bulk         — bulk create entries (max 50)
 PUT    /api/v1/sessions/:id/entries/:entryId     — update entry
 DELETE /api/v1/sessions/:id/entries/:entryId     — delete entry
 GET    /api/v1/sessions/:id/reports              — list reports

@@ -34,22 +34,24 @@ async function api(path: string, options: RequestInit = {}): Promise<unknown> {
 
 const server = new McpServer({
   name: "bountylens",
-  version: "0.2.0",
+  version: "0.3.0",
 });
 
 // ── Sessions ──
 
 server.tool(
   "bountylens_list_sessions",
-  "List all hunt sessions. Optionally filter by status (active/paused/completed) or program_id.",
+  "List all hunt sessions. Optionally filter by status (active/paused/completed), program_id, or program_handle.",
   {
     status: z.enum(["active", "paused", "completed"]).optional().describe("Filter by session status"),
     program_id: z.number().optional().describe("Filter by program ID"),
+    program_handle: z.string().optional().describe("Filter by program handle (e.g. 'uber', 'shopify')"),
   },
-  async ({ status, program_id }) => {
+  async ({ status, program_id, program_handle }) => {
     const params = new URLSearchParams();
     if (status) params.set("status", status);
     if (program_id) params.set("program_id", String(program_id));
+    if (program_handle) params.set("program_handle", program_handle);
     const qs = params.toString();
     const data = await api(`/sessions${qs ? `?${qs}` : ""}`);
     return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
@@ -58,15 +60,16 @@ server.tool(
 
 server.tool(
   "bountylens_create_session",
-  "Create a new hunt session for a target program.",
+  "Create a new hunt session for a target program. Use program_handle if you don't have the numeric program_id.",
   {
     title: z.string().max(200).describe("Session title (e.g. 'SSRF deep-dive', 'Auth bypass hunt')"),
     program_id: z.number().optional().describe("Program ID to associate with this session"),
+    program_handle: z.string().optional().describe("Program handle (e.g. 'uber') — resolved to program_id automatically"),
   },
-  async ({ title, program_id }) => {
+  async ({ title, program_id, program_handle }) => {
     const data = await api("/sessions", {
       method: "POST",
-      body: JSON.stringify({ title, program_id }),
+      body: JSON.stringify({ title, program_id, program_handle }),
     });
     return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
   },
@@ -195,7 +198,7 @@ server.tool(
 
 server.tool(
   "bountylens_update_entry",
-  "Update an existing entry (title, description, status, severity).",
+  "Update an existing entry (title, description, status, severity, type, endpoint, method).",
   {
     session_id: z.number().describe("Session ID"),
     entry_id: z.number().describe("Entry ID"),
@@ -203,6 +206,9 @@ server.tool(
     description: z.string().max(10000).optional().describe("New description"),
     status: z.enum(["open", "closed", "reported"]).optional().describe("New status"),
     severity: z.enum(["critical", "high", "medium", "low", "info"]).optional().describe("New severity"),
+    type: z.enum(["tested", "lead", "finding", "note"]).optional().describe("Change entry type"),
+    endpoint: z.string().max(2000).optional().describe("Endpoint/URL"),
+    method: z.enum(["GET", "POST", "PUT", "DELETE", "PATCH", "OTHER"]).optional().describe("HTTP method"),
   },
   async ({ session_id, entry_id, ...body }) => {
     const data = await api(`/sessions/${session_id}/entries/${entry_id}`, {
@@ -274,6 +280,58 @@ server.tool(
     const data = await api(`/sessions/${session_id}/reports/${report_id}`, {
       method: "PUT",
       body: JSON.stringify(body),
+    });
+    return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
+server.tool(
+  "bountylens_delete_report",
+  "Permanently delete a report from a hunt session.",
+  {
+    session_id: z.number().describe("Session ID"),
+    report_id: z.number().describe("Report ID to delete"),
+  },
+  async ({ session_id, report_id }) => {
+    const data = await api(`/sessions/${session_id}/reports/${report_id}`, {
+      method: "DELETE",
+    });
+    return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
+server.tool(
+  "bountylens_delete_session",
+  "Permanently delete a hunt session and all its entries and reports.",
+  {
+    session_id: z.number().describe("Session ID to delete"),
+  },
+  async ({ session_id }) => {
+    const data = await api(`/sessions/${session_id}`, {
+      method: "DELETE",
+    });
+    return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
+server.tool(
+  "bountylens_bulk_add_entries",
+  "Add multiple entries to a session in one call (max 50). Use this when logging several findings, leads, or tested endpoints at once.",
+  {
+    session_id: z.number().describe("Session ID"),
+    entries: z.array(z.object({
+      type: z.enum(["tested", "lead", "finding", "note"]).describe("Entry type"),
+      title: z.string().max(500).describe("Entry title"),
+      endpoint: z.string().max(2000).optional().describe("Endpoint/URL"),
+      method: z.enum(["GET", "POST", "PUT", "DELETE", "PATCH", "OTHER"]).optional().describe("HTTP method"),
+      description: z.string().max(10000).optional().describe("Description"),
+      severity: z.enum(["critical", "high", "medium", "low", "info"]).optional().describe("Severity (for findings)"),
+    })).min(1).max(50).describe("Array of entries to add"),
+  },
+  async ({ session_id, entries }) => {
+    const data = await api(`/sessions/${session_id}/entries/bulk`, {
+      method: "POST",
+      body: JSON.stringify({ entries }),
     });
     return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
   },

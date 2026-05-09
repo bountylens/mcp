@@ -1,6 +1,6 @@
 {
   "name": "@bountylens/mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "BountyLens MCP server — connect Claude Code to your Hunter Tracker",
   "type": "module",
   "main": "dist/index.js",
