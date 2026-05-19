@@ -147,6 +147,7 @@ server.tool(
   {
     session_id: z.number().describe("Session ID"),
     title: z.string().max(500).describe("Lead title (e.g. 'Interesting param reflection on /search')"),
+    severity: z.enum(["critical", "high", "medium", "low", "info"]).optional().describe("Estimated severity if exploitable"),
     endpoint: z.string().max(2000).optional().describe("Endpoint/URL"),
     method: z.enum(["GET", "POST", "PUT", "DELETE", "PATCH", "OTHER"]).optional().describe("HTTP method"),
     description: z.string().max(10000).optional().describe("What you observed and why it's worth investigating"),
@@ -268,12 +269,13 @@ server.tool(
 
 server.tool(
   "bountylens_update_report",
-  "Update a report draft (title, body, or status).",
+  "Update a report draft (title, body, severity, or status).",
   {
     session_id: z.number().describe("Session ID"),
     report_id: z.number().describe("Report ID"),
     title: z.string().max(300).optional().describe("New title"),
     body: z.string().max(50000).optional().describe("New body"),
+    severity: z.enum(["critical", "high", "medium", "low", "info"]).optional().describe("Report severity"),
     status: z.enum(["draft", "ready", "submitted"]).optional().describe("New status"),
   },
   async ({ session_id, report_id, ...body }) => {
