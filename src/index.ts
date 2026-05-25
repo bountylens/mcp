@@ -34,7 +34,7 @@ async function api(path: string, options: RequestInit = {}): Promise<unknown> {
 
 const server = new McpServer({
   name: "bountylens",
-  version: "0.3.0",
+  version: "0.4.0",
 });
 
 // ── Sessions ──
@@ -352,6 +352,58 @@ server.tool(
     const params = new URLSearchParams({ q: query });
     if (limit) params.set("limit", String(limit));
     const data = await api(`/programs?${params.toString()}`);
+    return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
+server.tool(
+  "bountylens_get_program",
+  "Get full details for a bug bounty program — bounties, dupe risk, health score, scope list, and recent scope changes.",
+  {
+    handle: z.string().describe("Program handle (e.g. 'uber', 'shopify')"),
+  },
+  async ({ handle }) => {
+    const data = await api(`/programs/${encodeURIComponent(handle)}`);
+    return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
+// ── Intelligence ──
+
+server.tool(
+  "bountylens_recommend_programs",
+  "Get program recommendations ranked by opportunity score (high bounty, low dupe risk, healthy program, fresh scope). Use this to pick the best target to hunt.",
+  {
+    limit: z.number().min(1).max(50).optional().describe("Max results (default 10)"),
+    platform: z.enum(["hackerone", "bugcrowd", "intigriti", "yeswehack"]).optional().describe("Filter by platform"),
+    min_bounty: z.number().optional().describe("Minimum critical bounty in USD (e.g. 1000)"),
+  },
+  async ({ limit, platform, min_bounty }) => {
+    const params = new URLSearchParams();
+    if (limit) params.set("limit", String(limit));
+    if (platform) params.set("platform", platform);
+    if (min_bounty) params.set("min_bounty", String(min_bounty));
+    const data = await api(`/recommend?${params.toString()}`);
+    return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
+server.tool(
+  "bountylens_get_watchlist",
+  "Get your watched programs with full metrics — bounties, dupe risk, health, scope changes, and how many sessions you've run on each.",
+  {},
+  async () => {
+    const data = await api("/watchlist");
+    return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
+server.tool(
+  "bountylens_get_my_stats",
+  "Get your hunt statistics — total sessions, findings, leads, tested endpoints, time spent, and per-program breakdown. Use this to identify coverage gaps.",
+  {},
+  async () => {
+    const data = await api("/stats");
     return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
   },
 );
