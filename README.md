@@ -2,7 +2,7 @@
 
 MCP server for [BountyLens](https://bountylens.com) — connect Claude Code to your Hunter Tracker.
 
-Push findings, leads, tested endpoints, and full report drafts directly from your terminal to the BountyLens dashboard. Everything you log during a hunt session appears in real-time in the web UI with an `MCP` badge.
+Push findings, leads, tested endpoints, and full report drafts directly from your terminal to the BountyLens dashboard. Search across all sessions, get program intelligence, and track your hunt stats — all without leaving the terminal. Everything you log appears in real-time in the web UI with an `MCP` badge.
 
 ## Quick Start
 
@@ -34,14 +34,14 @@ Add to your MCP config at `~/.claude/.mcp.json`:
 
 The BountyLens tools will be available immediately. No other setup needed.
 
-## Tools
+## Tools (23)
 
 ### Sessions
 
 | Tool | Description |
 |------|-------------|
-| `bountylens_list_sessions` | List hunt sessions — filter by `status` (active/paused/completed) or `program_id` |
-| `bountylens_create_session` | Start a new hunt session with a title and optional program |
+| `bountylens_list_sessions` | List hunt sessions — filter by `status` (active/paused/completed), `program_id`, or `program_handle` |
+| `bountylens_create_session` | Start a new hunt session with a title and optional program (by ID or handle) |
 | `bountylens_get_session` | Get a session with all its entries and counts |
 | `bountylens_update_session` | Update title, status, or notes |
 | `bountylens_delete_session` | Permanently delete a session and all its entries and reports |
@@ -55,7 +55,7 @@ The BountyLens tools will be available immediately. No other setup needed.
 | `bountylens_add_lead` | Log a promising lead that needs further investigation |
 | `bountylens_add_tested` | Mark an endpoint or feature as tested |
 | `bountylens_add_note` | Add a freeform note to the session |
-| `bountylens_update_entry` | Update an entry's title, description, status, or severity |
+| `bountylens_update_entry` | Update an entry's title, description, status, severity, type, endpoint, or method |
 | `bountylens_delete_entry` | Remove an entry |
 | `bountylens_bulk_add_entries` | Add up to 50 entries in one call — for batch logging findings, leads, or tested endpoints |
 
@@ -65,14 +65,29 @@ The BountyLens tools will be available immediately. No other setup needed.
 |------|-------------|
 | `bountylens_draft_report` | Create a report draft — include summary, steps to reproduce, impact, and remediation |
 | `bountylens_list_reports` | List all report drafts in a session |
-| `bountylens_update_report` | Edit a report's title, body, or status (draft/ready/submitted) |
+| `bountylens_update_report` | Edit a report's title, body, severity, or status (draft/ready/submitted) |
 | `bountylens_delete_report` | Permanently delete a report |
+
+### Search
+
+| Tool | Description |
+|------|-------------|
+| `bountylens_search_entries` | Search across ALL sessions for entries matching a query — finds past findings, leads, or tested endpoints without knowing which session they're in |
 
 ### Programs
 
 | Tool | Description |
 |------|-------------|
 | `bountylens_search_programs` | Search bug bounty programs by name or handle |
+| `bountylens_get_program` | Get full program details — bounties, dupe risk, health score, scope list, and recent scope changes |
+
+### Intelligence
+
+| Tool | Description |
+|------|-------------|
+| `bountylens_recommend_programs` | Get program recommendations ranked by opportunity score — filter by platform or minimum bounty |
+| `bountylens_get_watchlist` | Get your watched programs with metrics — bounties, dupe risk, health, scope changes, and session count |
+| `bountylens_get_my_stats` | Get your hunt statistics — sessions, findings, leads, tested endpoints, time spent, and per-program breakdown |
 
 ## Usage Examples
 
@@ -90,6 +105,18 @@ During a hunt in Claude Code, the LLM uses these tools automatically based on yo
 
 "Mark /api/auth as tested, CSRF tokens are present"
 → bountylens_add_tested with endpoint and description
+
+"Have I tested SSRF on any target before?"
+→ bountylens_search_entries with query="SSRF"
+
+"What's the scope for Shopify's program?"
+→ bountylens_get_program with handle="shopify"
+
+"What should I hunt next?"
+→ bountylens_recommend_programs with min_bounty=1000
+
+"How much time have I spent hunting this month?"
+→ bountylens_get_my_stats
 
 "Draft a report for the SSRF finding"
 → bountylens_draft_report with full report body
@@ -124,7 +151,12 @@ GET    /api/v1/sessions/:id/reports              — list reports
 POST   /api/v1/sessions/:id/reports              — create report
 PUT    /api/v1/sessions/:id/reports/:reportId    — update report
 DELETE /api/v1/sessions/:id/reports/:reportId    — delete report
+GET    /api/v1/search?q=query                    — search entries across all sessions
 GET    /api/v1/programs?q=search                 — search programs
+GET    /api/v1/programs/:handle                  — get program details
+GET    /api/v1/recommend                         — get program recommendations
+GET    /api/v1/watchlist                         — get watched programs
+GET    /api/v1/stats                             — get hunt statistics
 ```
 
 Rate limit: 60 requests/minute per API key.

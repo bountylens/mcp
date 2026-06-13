@@ -34,7 +34,7 @@ async function api(path: string, options: RequestInit = {}): Promise<unknown> {
 
 const server = new McpServer({
   name: "bountylens",
-  version: "0.4.0",
+  version: "0.5.0",
 });
 
 // ── Sessions ──
@@ -335,6 +335,23 @@ server.tool(
       method: "POST",
       body: JSON.stringify({ entries }),
     });
+    return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+  },
+);
+
+// ── Search ──
+
+server.tool(
+  "bountylens_search_entries",
+  "Search across ALL your hunt sessions for entries matching a query. Searches titles, endpoints, and descriptions. Use this to find past findings, leads, or tested endpoints without knowing which session they're in.",
+  {
+    query: z.string().min(2).describe("Search query (min 2 chars)"),
+    limit: z.number().min(1).max(100).optional().describe("Max results (default 30)"),
+  },
+  async ({ query, limit }) => {
+    const params = new URLSearchParams({ q: query });
+    if (limit) params.set("limit", String(limit));
+    const data = await api(`/search?${params.toString()}`);
     return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
   },
 );
