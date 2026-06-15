@@ -48,16 +48,20 @@ The BountyLens tools will be available immediately. No other setup needed.
 
 ### Entries
 
+All entry tools support the Tracker Pro fields: **`tags`** (lowercase, max 10), **`chain_id`** (link to another entry in the same session to build exploit chains), and **`retest_at`** (ISO-8601 timestamp → retest queue).
+
 | Tool | Description |
 |------|-------------|
-| `bountylens_list_entries` | List entries in a session — filter by `type` (tested/lead/finding/note) |
-| `bountylens_add_finding` | Log a validated finding with severity, endpoint, method, and description |
-| `bountylens_add_lead` | Log a promising lead that needs further investigation |
-| `bountylens_add_tested` | Mark an endpoint or feature as tested |
-| `bountylens_add_note` | Add a freeform note to the session |
-| `bountylens_update_entry` | Update an entry's title, description, status, severity, type, endpoint, or method |
+| `bountylens_list_entries` | List entries in a session — filter by `type` (tested/lead/finding/note) and/or `tag` |
+| `bountylens_add_finding` | Log a validated finding with severity, endpoint, method, description, `tags`, `chain_id` |
+| `bountylens_add_lead` | Log a promising lead — supports `tags`, `chain_id`, `retest_at` |
+| `bountylens_add_tested` | Mark an endpoint or feature as tested — supports `tags`, `retest_at` |
+| `bountylens_add_note` | Add a freeform note to the session — supports `tags` |
+| `bountylens_update_entry` | Update title, description, status, severity, type, endpoint, method, `tags`, `chain_id`, `retest_at` (passing `tags` replaces them) |
 | `bountylens_delete_entry` | Remove an entry |
-| `bountylens_bulk_add_entries` | Add up to 50 entries in one call — for batch logging findings, leads, or tested endpoints |
+| `bountylens_bulk_add_entries` | Add up to 50 entries in one call — each item supports `tags`, `chain_id`, `retest_at` |
+
+**Tag conventions:** `vuln:<class>` (`vuln:idor`, `vuln:ssrf`…), `surface:<type>` (`web`, `api`, `graphql`, `mobile`, `cloud-aws`…), `src:<origin>` (`src:hack`, `src:pentest`), `platform:<name>` (`h1`, `synack`, `bugcrowd`, `intigriti`, `ywh`). Don't tag severity or status — those are first-class fields.
 
 ### Reports
 

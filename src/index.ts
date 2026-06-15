@@ -34,8 +34,37 @@ async function api(path: string, options: RequestInit = {}): Promise<unknown> {
 
 const server = new McpServer({
   name: "bountylens",
-  version: "0.5.0",
+  version: "0.6.0",
 });
+
+// ── Shared entry fields (Tracker Pro) ──
+
+const tagsField = z
+  .array(z.string())
+  .max(10)
+  .optional()
+  .describe(
+    "Lowercase tags for filtering & dashboards (max 10). Conventions: " +
+      "vuln:<class> (vuln:idor, vuln:ssrf, vuln:xss…), " +
+      "surface:<type> (web, api, graphql, mobile, cloud-aws, cloud-gcp, cloud-azure, websocket), " +
+      "src:<origin> (src:hack, src:pentest), " +
+      "platform:<name> (h1, synack, bugcrowd, intigriti, ywh). " +
+      "Do NOT tag severity or status — those are first-class fields.",
+  );
+
+const chainIdField = z
+  .number()
+  .optional()
+  .describe(
+    "ID of another entry in the SAME session this one chains with — use to link the steps of an exploit chain.",
+  );
+
+const retestAtField = z
+  .string()
+  .optional()
+  .describe(
+    "ISO-8601 / timestamptz of when to revisit this entry — adds it to the retest queue (e.g. '2026-07-01T00:00:00Z').",
+  );
 
 // ── Sessions ──
 
@@ -109,14 +138,18 @@ server.tool(
 
 server.tool(
   "bountylens_list_entries",
-  "List entries in a hunt session. Optionally filter by type.",
+  "List entries in a hunt session. Optionally filter by type and/or a single tag.",
   {
     session_id: z.number().describe("Session ID"),
     type: z.enum(["tested", "lead", "finding", "note"]).optional().describe("Filter by entry type"),
+    tag: z.string().optional().describe("Filter to entries carrying this exact tag (e.g. 'vuln:idor')"),
   },
-  async ({ session_id, type }) => {
-    const qs = type ? `?type=${type}` : "";
-    const data = await api(`/sessions/${session_id}/entries${qs}`);
+  async ({ session_id, type, tag }) => {
+    const params = new URLSearchParams();
+    if (type) params.set("type", type);
+    if (tag) params.set("tag", tag);
+    const qs = params.toString();
+    const data = await api(`/sessions/${session_id}/entries${qs ? `?${qs}` : ""}`);
     return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
   },
 );
@@ -131,6 +164,8 @@ server.tool(
     endpoint: z.string().max(2000).optional().describe("Affected endpoint/URL"),
     method: z.enum(["GET", "POST", "PUT", "DELETE", "PATCH", "OTHER"]).optional().describe("HTTP method"),
     description: z.string().max(10000).optional().describe("Detailed description, PoC steps, impact"),
+    tags: tagsField,
+    chain_id: chainIdField,
   },
   async ({ session_id, ...body }) => {
     const data = await api(`/sessions/${session_id}/entries`, {
@@ -151,6 +186,9 @@ server.tool(
     endpoint: z.string().max(2000).optional().describe("Endpoint/URL"),
     method: z.enum(["GET", "POST", "PUT", "DELETE", "PATCH", "OTHER"]).optional().describe("HTTP method"),
     description: z.string().max(10000).optional().describe("What you observed and why it's worth investigating"),
+    tags: tagsField,
+    chain_id: chainIdField,
+    retest_at: retestAtField,
   },
   async ({ session_id, ...body }) => {
     const data = await api(`/sessions/${session_id}/entries`, {
@@ -170,6 +208,8 @@ server.tool(
     endpoint: z.string().max(2000).optional().describe("Endpoint/URL tested"),
     method: z.enum(["GET", "POST", "PUT", "DELETE", "PATCH", "OTHER"]).optional().describe("HTTP method"),
     description: z.string().max(10000).optional().describe("What was tested and result"),
+    tags: tagsField,
+    retest_at: retestAtField,
   },
   async ({ session_id, ...body }) => {
     const data = await api(`/sessions/${session_id}/entries`, {
@@ -187,6 +227,7 @@ server.tool(
     session_id: z.number().describe("Session ID"),
     title: z.string().max(500).describe("Note title"),
     description: z.string().max(10000).optional().describe("Note content"),
+    tags: tagsField,
   },
   async ({ session_id, ...body }) => {
     const data = await api(`/sessions/${session_id}/entries`, {
@@ -199,7 +240,7 @@ server.tool(
 
 server.tool(
   "bountylens_update_entry",
-  "Update an existing entry (title, description, status, severity, type, endpoint, method).",
+  "Update an existing entry (title, description, status, severity, type, endpoint, method, tags, chain_id, retest_at). Passing tags REPLACES the entry's existing tags.",
   {
     session_id: z.number().describe("Session ID"),
     entry_id: z.number().describe("Entry ID"),
@@ -210,6 +251,9 @@ server.tool(
     type: z.enum(["tested", "lead", "finding", "note"]).optional().describe("Change entry type"),
     endpoint: z.string().max(2000).optional().describe("Endpoint/URL"),
     method: z.enum(["GET", "POST", "PUT", "DELETE", "PATCH", "OTHER"]).optional().describe("HTTP method"),
+    tags: tagsField,
+    chain_id: chainIdField,
+    retest_at: retestAtField,
   },
   async ({ session_id, entry_id, ...body }) => {
     const data = await api(`/sessions/${session_id}/entries/${entry_id}`, {
@@ -328,6 +372,9 @@ server.tool(
       method: z.enum(["GET", "POST", "PUT", "DELETE", "PATCH", "OTHER"]).optional().describe("HTTP method"),
       description: z.string().max(10000).optional().describe("Description"),
       severity: z.enum(["critical", "high", "medium", "low", "info"]).optional().describe("Severity (for findings)"),
+      tags: tagsField,
+      chain_id: chainIdField,
+      retest_at: retestAtField,
     })).min(1).max(50).describe("Array of entries to add"),
   },
   async ({ session_id, entries }) => {
