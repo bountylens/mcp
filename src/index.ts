@@ -34,7 +34,7 @@ async function api(path: string, options: RequestInit = {}): Promise<unknown> {
 
 const server = new McpServer({
   name: "bountylens",
-  version: "0.6.0",
+  version: "0.7.0",
 });
 
 // ── Shared entry fields (Tracker Pro) ──
@@ -320,7 +320,7 @@ server.tool(
     title: z.string().max(300).optional().describe("New title"),
     body: z.string().max(50000).optional().describe("New body"),
     severity: z.enum(["critical", "high", "medium", "low", "info"]).optional().describe("Report severity"),
-    status: z.enum(["draft", "ready", "submitted"]).optional().describe("New status"),
+    status: z.enum(["draft", "ready", "submitted", "resolved", "duplicate", "informative", "not_applicable"]).optional().describe("New status. Lifecycle: draft → ready → submitted. Closed outcomes: resolved (accepted/paid), duplicate, informative, not_applicable (N/A)."),
   },
   async ({ session_id, report_id, ...body }) => {
     const data = await api(`/sessions/${session_id}/reports/${report_id}`, {

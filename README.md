@@ -69,7 +69,7 @@ All entry tools support the Tracker Pro fields: **`tags`** (lowercase, max 10), 
 |------|-------------|
 | `bountylens_draft_report` | Create a report draft — include summary, steps to reproduce, impact, and remediation |
 | `bountylens_list_reports` | List all report drafts in a session |
-| `bountylens_update_report` | Edit a report's title, body, severity, or status (draft/ready/submitted) |
+| `bountylens_update_report` | Edit a report's title, body, severity, or status — lifecycle (draft/ready/submitted) or closed outcome (resolved/duplicate/informative/not_applicable) |
 | `bountylens_delete_report` | Permanently delete a report |
 
 ### Search
